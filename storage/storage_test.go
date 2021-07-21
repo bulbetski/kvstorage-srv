@@ -74,6 +74,43 @@ func TestStorage_SaveLoadFile(t *testing.T) {
 	defer os.Remove(filename)
 }
 
+//TODO: check if janitor clears all expired items and does it at the right time
+
+func TestStorage_TTL(t *testing.T) {
+	s := New(DefaultExpiration, 10*time.Millisecond, 0)
+	s.set("k1", "v1", 7*time.Millisecond)
+	s.set("k2", "v2", 15*time.Millisecond)
+	s.set("k3", "v3", NoExpiration)
+
+	_, found := s.Get("k1")
+	if !found {
+		t.Error("k1 not found although not expired")
+	}
+	//not sure if using time.Sleep() in tests is a good idea
+	time.Sleep(10 * time.Millisecond)
+
+	_, found = s.Get("k1")
+	if found {
+		t.Error("k1 was not cleared by janitor")
+	}
+
+	_, found = s.Get("k2")
+	if !found {
+		t.Error("k2 not found after first clear although not expired")
+	}
+
+	time.Sleep(10 * time.Millisecond)
+	_, found = s.Get("k2")
+	if found {
+		t.Error("k2 was not cleared")
+	}
+
+	_, found = s.Get("k3")
+	if !found {
+		t.Error("k3 not found when it should never expire")
+	}
+}
+
 func BenchmarkStorage_GetExpiring(b *testing.B) {
 	benchmarkStorageGet(b, 5*time.Minute)
 }

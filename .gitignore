@@ -17,4 +17,5 @@
 # vendor/
 
 .idea
+*.dat
 /kvstorage-srv
